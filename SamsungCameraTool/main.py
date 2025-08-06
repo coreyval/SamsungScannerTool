@@ -6,15 +6,27 @@ from datetime import datetime
 from PIL import Image, ExifTags, ImageTk
 import cv2
 import tkinter as tk
-from tkinter import messagebox, simpledialog, filedialog
+from tkinter import messagebox, simpledialog, filedialog, Button, Frame, LEFT
 import numpy as np
 import threading
+import shutil
+
 
 # ---------- Directory Setup ----------
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOOLS_DIR = os.path.join(BASE_DIR, "tools")
-CAPTURE_DIR = os.path.join(BASE_DIR, "captures")
+TOOLS_DIR = resource_path("tools")
+CAPTURE_DIR = resource_path("captures")
 TEMP_VIEW_DIR = os.path.join(CAPTURE_DIR, "temp_view")
+
+os.makedirs(CAPTURE_DIR, exist_ok=True)
+os.makedirs(TEMP_VIEW_DIR, exist_ok=True)
+SAVE_DIR = CAPTURE_DIR
+
 
 # Ensure folders exist
 os.makedirs(CAPTURE_DIR, exist_ok=True)
@@ -28,6 +40,29 @@ root = tk.Tk()
 root.title("Samsung Camera Tool")
 root.geometry("300x500")
 root.attributes('-topmost', True)
+
+# ---------- Helper Tips ----------
+def show_help():
+    help_text = (
+        "📸 Welcome to Samsung Camera Tool!\n\n"
+        "• Connect Wirelessly:\n"
+        "  Plug in your phone via USB to enable wireless control.\n\n"
+        "• Open Camera App:\n"
+        "  Launches the default camera app on your phone.\n\n"
+        "• Take Photo:\n"
+        "  Captures a photo remotely using your phone.\n\n"
+        "• Live View:\n"
+        "  Opens scrcpy for viewing and controlling your phone screen.\n\n"
+        "• View All Phone Photos:\n"
+        "  Pulls all recent photos from your phone for preview.\n\n"
+        "• Set Save Folder:\n"
+        "  Choose where the captured images are saved on your PC.\n\n"
+        "• Quit App:\n"
+        "  Closes this program.\n\n"
+        "💾 Default save folder: 'captures'"
+    )
+    messagebox.showinfo("User Guide", help_text)
+
 
 # ---------- Quit ----------
 def quit_app():
@@ -46,17 +81,38 @@ def tool_path(filename):
 
 def start_standard_view():
     try:
-        subprocess.Popen([tool_path("scrcpy.exe"), "--stay-awake"])
-    except FileNotFoundError:
-        messagebox.showerror(
-            title="scrcpy Not Found",
-            message="Please install scrcpy and ensure it's on your PATH."
+        process = subprocess.Popen(
+            [tool_path("scrcpy.exe"), "--stay-awake"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
         )
+
+        # Let it run for a short time, then check output
+        time.sleep(2)
+        stdout, stderr = process.communicate(timeout=5)
+
+        # Check for common scrcpy errors
+        if "state=offline" in stderr or "Device disconnected" in stderr or "Server connection failed" in stderr:
+            messagebox.showerror("Live View Error", "❌ scrcpy failed to connect.\nMake sure your phone is online and connected via ADB.")
+        elif process.returncode is not None and process.returncode != 0:
+            messagebox.showerror("Live View Error", f"❌ scrcpy exited with error code {process.returncode}.")
+    except subprocess.TimeoutExpired:
+        messagebox.showerror("Timeout", "scrcpy took too long to respond.")
+    except FileNotFoundError:
+        messagebox.showerror("scrcpy Not Found", "⚠️ scrcpy.exe is missing.\nPlease reinstall the tool.")
+    except Exception as e:
+        messagebox.showerror("Unknown Error", f"An unexpected error occurred:\n{str(e)}")
+
 
 # ---------- ADB ----------
 def run_adb(cmd):
     result = subprocess.run([tool_path("adb.exe"), "shell"] + cmd, capture_output=True, text=True)
+    if "device offline" in result.stderr.lower():
+        messagebox.showerror("ADB Error", "❌ ADB reports your device is offline.\n\nTry:\n- Reconnecting USB\n- Accepting the debugging prompt on your phone\n- Running `adb kill-server` and `adb start-server`")
+        return ""
     return result.stdout.strip()
+
 
 def list_photos():
     output = run_adb(["ls", "-t", "/sdcard/DCIM/Camera"])
@@ -91,118 +147,149 @@ def pull_all_photos():
     return [os.path.join(TEMP_VIEW_DIR, f) for f in photos if os.path.exists(os.path.join(TEMP_VIEW_DIR, f))]
 
 # ---------- Image Viewer ----------
-def preview_carousel(images):
-    if not images:
+def preview_carousel(image_paths):
+    if not image_paths:
         return
 
-    idx = [0]
-    selected_photos = []
+    win = tk.Toplevel()
+    win.title("Photo Viewer")
 
-    def update_image():
-        img_bgr = cv2.imread(images[idx[0]])
-        if img_bgr is None:
-            return
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        img_pil = Image.fromarray(img_rgb)
-        img_pil.thumbnail((600, 600), Image.ANTIALIAS)
-        img_tk = ImageTk.PhotoImage(img_pil)
-        panel.config(image=img_tk)
-        panel.image = img_tk
-        label.config(text=f"{idx[0]+1}/{len(images)}\n{os.path.basename(images[idx[0]])}")
+    current = [0]  # Use list for mutability
+    selected = set()
+    images = []  # <-- Store PhotoImage references here
 
-    def next_img():
-        if idx[0] < len(images) - 1:
-            idx[0] += 1
-            update_image()
+    img_label = tk.Label(win)
+    img_label.pack()
 
-    def prev_img():
-        if idx[0] > 0:
-            idx[0] -= 1
-            update_image()
-
-    def delete_photo():
-        path = images.pop(idx[0])
-        if os.path.exists(path):
-            os.remove(path)
-        if not images:
-            win.destroy()
-            return
-        if idx[0] >= len(images):
-            idx[0] = len(images) - 1
-        update_image()
-
-    def select_photo():
-        if images[idx[0]] not in selected_photos:
-            selected_photos.append(images[idx[0]])
-        messagebox.showinfo("Selected", "Photo added to export list.")
-
-    def go_to_index():
+    def show_image(index):
+        img_path = image_paths[index]
         try:
-            value = int(simpledialog.askstring("Go to Photo", f"Enter photo number (1-{len(images)}):"))
-            if 1 <= value <= len(images):
-                idx[0] = value - 1
-                update_image()
+            img = load_image_auto_orient(img_path)
+            img.thumbnail((500, 500))
+            photo = ImageTk.PhotoImage(img)
+            img_label.configure(image=photo)
+            img_label.image = photo  # <-- Prevent garbage collection
+            images.append(photo)     # <-- Keep global reference
+        except Exception as e:
+            messagebox.showerror("Image Error", f"❌ Failed to load image: {e}")
+
+    def next_image():
+        if current[0] < len(image_paths) - 1:
+            current[0] += 1
+            show_image(current[0])
+
+    def prev_image():
+        if current[0] > 0:
+            current[0] -= 1
+            show_image(current[0])
+
+    def delete_image():
+        idx = current[0]
+        try:
+            os.remove(image_paths[idx])
+            del image_paths[idx]
+            if idx >= len(image_paths):
+                current[0] = max(0, len(image_paths) - 1)
+            show_image(current[0]) if image_paths else win.destroy()
+        except Exception as e:
+            messagebox.showerror("Delete Error", f"❌ Failed to delete: {e}")
+
+    def toggle_select():
+        idx = current[0]
+        if idx in selected:
+            selected.remove(idx)
+        else:
+            selected.add(idx)
+
+    def go_to_number():
+        try:
+            idx = int(simpledialog.askstring("Go to", f"Enter image index (0 - {len(image_paths)-1})"))
+            if 0 <= idx < len(image_paths):
+                current[0] = idx
+                show_image(current[0])
         except:
             pass
 
-    def export_photos(photos):
-        folder = filedialog.askdirectory(title="Select Export Folder")
-        if not folder:
-            return
-        exported = 0
-        for path in photos:
-            name = os.path.basename(path)
-            dest_path = os.path.join(folder, name)
-            if os.path.exists(dest_path):
-                continue
-            try:
-                img = Image.open(path)
-                for orientation in ExifTags.TAGS.keys():
-                    if ExifTags.TAGS[orientation] == 'Orientation':
-                        break
-                exif = img._getexif()
-                if exif is not None:
-                    orientation_value = exif.get(orientation, None)
-                    if orientation_value == 3:
-                        img = img.rotate(180, expand=True)
-                    elif orientation_value == 6:
-                        img = img.rotate(270, expand=True)
-                    elif orientation_value == 8:
-                        img = img.rotate(90, expand=True)
-                img = img.convert("RGB")
-                img.save(dest_path)
-                exported += 1
-            except:
-                continue
-        messagebox.showinfo("Export Complete", f"Saved {exported} photo(s).")
-
     def export_selected():
-        export_photos(selected_photos)
+        if not selected:
+            messagebox.showinfo("None Selected", "No images selected.")
+            return
+        export_dir = filedialog.askdirectory(title="Select Export Directory")
+        if export_dir:
+            for idx in selected:
+                src = image_paths[idx]
+                dst = os.path.join(export_dir, os.path.basename(src))
+                try:
+                    shutil.copy2(src, dst)
+                except Exception as e:
+                    messagebox.showerror("Export Error", f"Failed to export {src}:\n{e}")
+            messagebox.showinfo("Done", f"Exported {len(selected)} files.")
 
     def export_all():
-        export_photos(images)
+        export_dir = filedialog.askdirectory(title="Export All Images To...")
+        if export_dir:
+            for path in image_paths:
+                try:
+                    shutil.copy2(path, os.path.join(export_dir, os.path.basename(path)))
+                except Exception as e:
+                    messagebox.showerror("Export Error", f"Failed to export {path}:\n{e}")
+            messagebox.showinfo("Done", f"Exported {len(image_paths)} files.")
 
-    win = tk.Toplevel()
-    win.title("View Photos")
-    panel = tk.Label(win)
-    panel.pack()
+    # Buttons
+    buttons = [
+        ("◀ Prev", prev_image),
+        ("▶ Next", next_image),
+        ("🗑 Delete", delete_image),
+        ("✅ Select", toggle_select),
+        ("# Go to #", go_to_number),
+        ("📤 Export Selected", export_selected),
+        ("📦 Export All", export_all)
+    ]
 
-    label = tk.Label(win, text="", pady=5)
-    label.pack()
+    # Row 1: Prev / Next
+    row1 = Frame(win)
+    row1.pack(pady=2)
+    Button(row1, text='⬅ Prev', command=prev_image).pack(side=LEFT, padx=2)
+    Button(row1, text='➡ Next', command=next_image).pack(side=LEFT, padx=2)
 
-    btn_frame = tk.Frame(win)
-    btn_frame.pack(pady=10)
+    # Row 2: Delete / Select
+    row2 = Frame(win)
+    row2.pack(pady=2)
+    Button(row2, text='🗑 Delete', command=delete_image).pack(side=LEFT, padx=2)
+    Button(row2, text='✅ Select', command=toggle_select).pack(side=LEFT, padx=2)
 
-    tk.Button(btn_frame, text="⏪ Prev", command=prev_img).grid(row=0, column=0, padx=10)
-    tk.Button(btn_frame, text="⏩ Next", command=next_img).grid(row=0, column=1, padx=10)
-    tk.Button(btn_frame, text="🗑 Delete", command=delete_photo).grid(row=1, column=0, columnspan=2, pady=5)
-    tk.Button(btn_frame, text="✅ Select", command=select_photo).grid(row=2, column=0, columnspan=2, pady=5)
-    tk.Button(btn_frame, text="🔢 Go to #", command=go_to_index).grid(row=3, column=0, columnspan=2, pady=5)
-    tk.Button(btn_frame, text="💾 Export Selected", command=export_selected).grid(row=4, column=0, columnspan=2, pady=5)
-    tk.Button(btn_frame, text="📤 Export All", command=export_all).grid(row=5, column=0, columnspan=2, pady=10)
+    # Row 3: Go to # / Export Selected / Export All
+    row3 = Frame(win)
+    row3.pack(pady=2)
+    Button(row3, text='# Go to #', command=go_to_number).pack(side=LEFT, padx=2)
+    Button(row3, text='📂 Export Selected', command=export_selected).pack(side=LEFT, padx=2)
+    Button(row3, text='📦 Export All', command=export_all).pack(side=LEFT, padx=2)
 
-    update_image()
-    win.mainloop()
+    # 👉 Show first image on load
+    show_image(current[0])
+
+def load_image_auto_orient(path):
+    img = Image.open(path)
+
+    try:
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == 'Orientation':
+                break
+
+        exif = img._getexif()
+        if exif is not None:
+            orientation_value = exif.get(orientation, None)
+
+            if orientation_value == 3:
+                img = img.rotate(180, expand=True)
+            elif orientation_value == 6:
+                img = img.rotate(270, expand=True)
+            elif orientation_value == 8:
+                img = img.rotate(90, expand=True)
+    except Exception as e:
+        print(f"EXIF auto-rotate failed: {e}")
+
+    return img
 
 # ---------- Handlers ----------
 def take_photo():
@@ -255,6 +342,7 @@ buttons = [
     ("👁️ Live View", start_standard_view),
     ("🖼 View All Phone Photos", view_all_photos),
     ("📂 Set Save Folder", set_save_dir),
+    ("❓ Help", show_help),
     ("❎ Quit App", quit_app),
 ]
 
@@ -265,3 +353,5 @@ for i, (label, func) in enumerate(buttons):
     btn.grid(row=row, column=col, padx=5, pady=5)
 
 root.mainloop()
+
+# Corey
