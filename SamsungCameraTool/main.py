@@ -3,17 +3,24 @@ import sys
 import time
 import subprocess
 from datetime import datetime
-from PIL import Image, ExifTags, ImageTk
+from PIL import Image, ExifTags, ImageTk, ImageOps
 import cv2
 import tkinter as tk
 from tkinter import messagebox, simpledialog, filedialog
 import numpy as np
 import threading
 
-# ---------- Directory Setup ----------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOOLS_DIR = os.path.join(BASE_DIR, "tools")
-CAPTURE_DIR = os.path.join(BASE_DIR, "captures")
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller onefile """
+    if getattr(sys, 'frozen', False):  # PyInstaller bundle
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
+
+# --------- Directory Setup ---------
+TOOLS_DIR = resource_path("tools")
+CAPTURE_DIR = resource_path("captures")
 TEMP_VIEW_DIR = os.path.join(CAPTURE_DIR, "temp_view")
 
 # Ensure folders exist
@@ -104,7 +111,7 @@ def preview_carousel(images):
             return
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
-        img_pil.thumbnail((600, 600), Image.ANTIALIAS)
+        img_pil.thumbnail((600, 600), Image.Resampling.LANCZOS)
         img_tk = ImageTk.PhotoImage(img_pil)
         panel.config(image=img_tk)
         panel.image = img_tk
