@@ -24,6 +24,8 @@ A simple and user-friendly image viewer and export tool designed to preview, man
 Install required libraries:  
 ```bash
 pip install pillow
+pip install opencv-python
+pip install PyInstaller
 ```
 
 ## 🚀 Usage
@@ -48,9 +50,12 @@ Use the interface to view, delete, and export images.
 
 ## 📷 Command to Build
 The program will not work without the following libraries installed. Make sure these are installed and Python is in your path.
-pip install Pillow
+```bash
+pip install pillow
 pip install opencv-python
-pip install Pyinstaller
-
+pip install PyInstaller
+```
 Use this command within the folder.
+``` bash
 pyinstaller --noconsole --onefile --add-data "tools;tools" --add-data "captures;captures" --name "Samsung Scanner Tool" main.py
+```
