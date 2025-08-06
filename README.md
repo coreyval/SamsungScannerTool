@@ -46,9 +46,6 @@ Use the interface to view, delete, and export images.
 - Deleted images are permanently removed, so proceed with caution  
 - This tool is ideal for reviewing and exporting batches of mobile-captured images quickly
 
-## 📷 Screenshot
+## 📷 Command to Build
 
-![Screenshot](./path/to/screenshot.png)
-
-Install cmd
-pyinstaller --onefile --noconsole --name "Samsung Scanner Tool" --icon=assets/icon.ico --distpath . --hidden-import=PIL --hidden-import=PIL.Image --hidden-import=PIL.ImageTk SamsungCameraTool/main.py
+pyinstaller --noconsole --onefile --add-data "tools;tools" --add-data "captures;captures" --name "Samsung Scanner Tool" main.py
