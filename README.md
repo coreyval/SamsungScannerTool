@@ -50,6 +50,5 @@ Use the interface to view, delete, and export images.
 
 ![Screenshot](./path/to/screenshot.png)
 
-## 📄 License
-
-MIT License
+Install cmd
+pyinstaller --onefile --noconsole --name "Samsung Scanner Tool" --icon=assets/icon.ico --distpath . --hidden-import=PIL --hidden-import=PIL.Image --hidden-import=PIL.ImageTk SamsungCameraTool/main.py
