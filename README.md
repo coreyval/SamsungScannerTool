@@ -47,5 +47,10 @@ Use the interface to view, delete, and export images.
 - This tool is ideal for reviewing and exporting batches of mobile-captured images quickly
 
 ## 📷 Command to Build
+The program will not work without the following libraries installed. Make sure these are installed and Python is in your path.
+pip install Pillow
+pip install opencv-python
+pip install Pyinstaller
 
+Use this command within the folder.
 pyinstaller --noconsole --onefile --add-data "tools;tools" --add-data "captures;captures" --name "Samsung Scanner Tool" main.py
