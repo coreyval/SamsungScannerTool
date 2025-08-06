@@ -51,9 +51,7 @@ Use the interface to view, delete, and export images.
 ## 📷 Command to Build
 The program will not work without the following libraries installed. Make sure these are installed and Python is in your path.
 ```bash
-pip install pillow
-pip install opencv-python
-pip install PyInstaller
+pip install Pillow opencv-python PyInstaller
 ```
 Use this command within the folder.
 ``` bash
