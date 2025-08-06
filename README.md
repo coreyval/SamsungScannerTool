@@ -57,3 +57,4 @@ Use this command within the folder: "SamsungCameraTool"
 ``` bash
 pyinstaller --noconsole --onefile --add-data "tools;tools" --add-data "captures;captures" --name "Samsung Scanner Tool" main.py
 ```
+The program will be in the "dist" folder.
