@@ -92,6 +92,27 @@ def pull_all_photos():
         pull_photo(file, TEMP_VIEW_DIR)
     return [os.path.join(TEMP_VIEW_DIR, f) for f in photos if os.path.exists(os.path.join(TEMP_VIEW_DIR, f))]
 
+def download_all_photos():
+    if not SAVE_DIR:
+        messagebox.showerror("No Folder", "Please set a save folder first.")
+        return
+
+    photos = list_photos()
+    if not photos:
+        messagebox.showwarning("No Images", "There are no images to download.")
+        return
+
+    downloaded = 0
+    try:
+        for file in photos:
+            local_path = os.path.join(SAVE_DIR, file)
+            if not os.path.exists(local_path):
+                pull_photo(file, SAVE_DIR)
+                downloaded += 1
+        messagebox.showinfo("Download Complete", f"{downloaded} photo(s) downloaded to:\n{SAVE_DIR}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to download all photos:\n{e}")
+
 # ---------- Image Viewer ----------
 def preview_carousel(images):
     if not images:
@@ -106,7 +127,7 @@ def preview_carousel(images):
             return
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
-        img_pil.thumbnail((600, 600), Image.ANTIALIAS)
+        img_pil.thumbnail((600, 600), Image.Resampling.LANCZOS)
         img_tk = ImageTk.PhotoImage(img_pil)
         panel.config(image=img_tk)
         panel.image = img_tk
@@ -258,6 +279,9 @@ buttons = [
     ("🖼 View All Phone Photos", view_all_photos),
     ("📂 Set Save Folder", set_save_dir),
     ("❎ Quit App", quit_app),
+    ("📥 Download All Photos", download_all_photos),
+
+
 ]
 
 for i, (label, func) in enumerate(buttons):
