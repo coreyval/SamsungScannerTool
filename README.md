@@ -1,31 +1,37 @@
-# Samsung Camera Tool 📸
+# Samsung Scanner Tool 📸
 
-A simple and user-friendly image viewer and export tool designed to preview, manage, and export photos captured from a connected Samsung device.
+A portable, user-friendly tool for scanning, processing, and managing photos directly from a connected Samsung device using **ADB**. Designed for fast workflow automation, asset tagging, and organized exporting.
 
 ## ✨ Features
 
-- 🔍 Image Carousel: Browse images one-by-one with `Prev` and `Next` buttons  
-- 🗑️ Delete: Remove unwanted photos directly from the interface  
-- ✅ Select: Choose specific images for batch export  
-- 🔢 Jump to Image: Go to a specific photo by index  
-- 📂 Export Options:  
-  - Export Selected: Copy only selected images to a folder  
-  - Export All: Copy all images at once
+- 📱 **Wireless or USB Device Connection** – Connect to your Samsung device with ADB over USB or Wi-Fi  
+- 🖼 **Live View** – View your phone’s camera feed directly from your PC  
+- 📸 **Remote Capture** – Take photos from your device via the app interface  
+- 🗂 **Automatic Folder Creation** – Organizes photos into folders based on scanned asset tags  
+- 📦 **Process Photos** –  
+  - Finish processing to move images into the correct tagged folder  
+  - Automatically prevents reprocessing of the same asset tag  
+- 🗑 **Phone Cleanup** – Deletes photos from the device after transfer  
+- 🖼 **Carousel Photo Viewer** – Browse transferred images with Previous/Next navigation  
+- ✅ **Batch Selection & Export** – Export only selected images or all images to a chosen directory  
+- 🔍 **Jump to Photo** – Quickly navigate to a specific photo index  
+- 📂 **Custom Export Directory** – Choose where processed photos are saved  
+- 💾 **Persistent Configuration** – Remembers your last used export folder and settings
 
 ## 🛠 Requirements
 
-- Python 3.7+  
+- Python **3.7+**
+- Installed system **ADB** (Android Debug Bridge) or included `tools/` folder
 - Dependencies:  
   - tkinter  
   - Pillow  
+  - OpenCV  
   - shutil  
   - os  
 
-Install required libraries:  
+Install required libraries:
 ```bash
-pip install pillow
-pip install opencv-python
-pip install PyInstaller
+pip install pillow opencv-python PyInstaller
 ```
 
 ## 🚀 Usage
@@ -35,26 +41,35 @@ Run the script:
 python main.py
 ```
 
-Use the interface to view, delete, and export images.
+Use the interface to:
+1. **Connect** your Samsung device (USB or Wireless)
+2. **Live View** to preview your phone camera
+3. **Capture** photos
+4. **Scan Asset Tag** to create an organized folder
+5. **Finish Processing** to store photos in the correct folder
+6. **View / Export** processed images
 
 ## 📁 Folder Structure
 
-- All images should be placed inside the `captures/` folder by default  
-- Export directories can be chosen during use
+- `captures/` → Temporary folder for pulled images  
+- `tools/` → Contains ADB and helper tools  
+- `scripts/` → Core program scripts  
 
 ## 💡 Notes
 
-- Image orientation is automatically adjusted  
-- Deleted images are permanently removed, so proceed with caution  
-- This tool is ideal for reviewing and exporting batches of mobile-captured images quickly
+- Processed folders are protected from duplicate processing for the same asset tag  
+- Deleted images on the phone are **permanent**  
+- Ideal for workflows involving **asset tagging, inventory management, and mobile photo capture**
 
-## 📷 Command to Build
-The program will not work without the following libraries installed. Make sure these are installed and Python is in your path.
+## 📷 Command to Build (Windows)
+
+The program will not work without the following libraries installed. Ensure **Python** is in your system path:
 ```bash
 pip install Pillow opencv-python PyInstaller
 ```
-Use this command within the folder: "SamsungCameraTool"
-``` bash
+
+Run this inside the `SamsungScannerTool` folder:
+```bash
 pyinstaller --noconsole --onefile --clean --noconfirm ^
   --add-data "tools;tools" ^
   --add-data "captures;captures" ^
@@ -65,4 +80,5 @@ pyinstaller --noconsole --onefile --clean --noconfirm ^
   --icon "assets\icon.ico" ^
   --name "Samsung Scanner Tool" main.py
 ```
-The program will be in the "dist" folder. Afterwards, drag the exe file into the parent. When you see the icon of the exe file appear, that means you've done it right!
+The compiled program will be in the `dist` folder. Move the `.exe` file into the parent directory.  
+When you see the icon appear, the build was successful.
