@@ -65,4 +65,4 @@ pyinstaller --noconsole --onefile --clean --noconfirm ^
   --icon "assets\icon.ico" ^
   --name "Samsung Scanner Tool" main.py
 ```
-The program will be in the "dist" folder.
+The program will be in the "dist" folder. Afterwards, drag the exe file into the parent. When you see the icon of the exe file appear, that means you've done it right!
