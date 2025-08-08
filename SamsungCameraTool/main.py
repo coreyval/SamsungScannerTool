@@ -113,6 +113,16 @@ def download_all_photos():
     except Exception as e:
         messagebox.showerror("Error", f"Failed to download all photos:\n{e}")
 
+def delete_all_photos():
+    confirm = messagebox.askyesno("Delete All", "⚠ This will permanently delete ALL photos from the phone's Camera folder. Continue?")
+    if confirm:
+        try:
+            subprocess.run([tool_path("adb.exe"), "shell", "rm", "/sdcard/DCIM/Camera/*"])
+            messagebox.showinfo("Deleted", "All photos deleted from phone.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete all photos:\n{e}")
+
+
 # ---------- Image Viewer ----------
 def preview_carousel(images):
     if not images:
