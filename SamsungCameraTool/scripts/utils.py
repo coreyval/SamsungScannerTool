@@ -1,13 +1,14 @@
 import os, sys, subprocess, time, tkinter as tk
 from tkinter import messagebox
+from pathlib import Path
 
 APP_NAME = "Samsung Scanner Tool"
 
-def base_dir():
-    # Works in dev and PyInstaller --onefile
+def base_dir() -> str:
     if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__ + "/.."))
+        return Path(sys.executable).parent.as_posix()
+    # scripts/ lives under the app root; go up one from this file
+    return Path(__file__).resolve().parent.parent.as_posix()
 
 def tool_path(filename: str) -> str:
     return os.path.join(base_dir(), "tools", filename)
