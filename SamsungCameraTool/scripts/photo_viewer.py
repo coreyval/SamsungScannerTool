@@ -1,4 +1,5 @@
 # scripts/photo_viewer.py
+# Corey
 import os
 import tkinter as tk
 from tkinter import messagebox
