@@ -14,7 +14,7 @@ ensure_dir(SAVE_DIR)
 # --- GUI ---
 root = tk.Tk()
 root.title("Samsung Scanner Tool")
-root.geometry("320x320")
+root.geometry("250x250")
 root.attributes("-topmost", True)
 
 def set_save_folder():
