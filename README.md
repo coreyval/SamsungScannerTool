@@ -55,6 +55,14 @@ pip install Pillow opencv-python PyInstaller
 ```
 Use this command within the folder: "SamsungCameraTool"
 ``` bash
-pyinstaller --noconsole --onefile --add-data "tools;tools" --add-data "captures;captures" --name "Samsung Scanner Tool" main.py
+pyinstaller --noconsole --onefile --clean --noconfirm ^
+  --add-data "tools;tools" ^
+  --add-data "captures;captures" ^
+  --add-data "scripts;scripts" ^
+  --collect-all PIL ^
+  --hidden-import PIL.ImageTk ^
+  --hidden-import PIL._tkinter_finder ^
+  --icon "assets\icon.ico" ^
+  --name "Samsung Scanner Tool" main.py
 ```
 The program will be in the "dist" folder.
