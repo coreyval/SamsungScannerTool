@@ -2,6 +2,9 @@ import os, sys, subprocess, time, tkinter as tk
 from tkinter import messagebox
 from pathlib import Path
 
+import platform
+import subprocess
+
 APP_NAME = "Samsung Scanner Tool"
 
 def base_dir() -> str:
@@ -27,7 +30,10 @@ def error(msg: str, title: str = APP_NAME):
 
 def run(cmd, check=False, **kwargs):
     # text + capture_output default so we can inspect stdout/stderr
-    return subprocess.run(cmd, check=check, text=True, capture_output=True, **kwargs)
+    kw = dict(text=True, capture_output=True)
+    kw.update(_hidden_proc_kwargs())
+    kw.update(kwargs)
+    return subprocess.run(cmd, check=check, **kw)
 
 def run_adb_shell(args):
     adb = tool_path("adb.exe")
@@ -37,6 +43,14 @@ def run_adb_shell(args):
 def run_adb(args):
     adb = tool_path("adb.exe")
     return run([adb] + args)
+
+def _hidden_proc_kwargs():
+    """Return kwargs to hide console windows on Windows."""
+    if platform.system() == "Windows":
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        return {"startupinfo": si, "creationflags": subprocess.CREATE_NO_WINDOW}
+    return {}
 
 CAMERA_DIR = "/sdcard/DCIM/Camera"
 

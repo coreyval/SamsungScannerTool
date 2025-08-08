@@ -1,5 +1,5 @@
 import subprocess
-from .utils import tool_path, error
+from .utils import tool_path, error, _hidden_proc_kwargs
 
 def start_live_view():
     try:
