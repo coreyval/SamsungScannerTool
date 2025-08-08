@@ -6,3 +6,4 @@ def start_live_view():
         subprocess.Popen([tool_path("scrcpy.exe"), "--stay-awake"])
     except FileNotFoundError:
         error("scrcpy.exe not found in tools folder.")
+        # done.
