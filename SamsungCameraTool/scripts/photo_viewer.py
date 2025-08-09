@@ -1,9 +1,9 @@
 # scripts/photo_viewer.py
-#
+# Corey
 import os
 import tkinter as tk
 from tkinter import messagebox
-from PIL import Image, ImageTk, ImageOps
+from PIL import Image, ImageTk
 
 from .utils import (
     ensure_dir,
@@ -67,11 +67,6 @@ def view_phone_photos(parent: tk.Tk | tk.Toplevel | None = None, temp_dir: str |
         path = local_paths[i]
         try:
             img = Image.open(path)
-            # Auto-rotate based on EXIF Orientation if present
-            try:
-                img = ImageOps.exif_transpose(img)
-            except Exception:
-                pass
             img.thumbnail((640, 640), Image.Resampling.LANCZOS)
             imgtk = ImageTk.PhotoImage(img)
             panel.config(image=imgtk, compound=None)

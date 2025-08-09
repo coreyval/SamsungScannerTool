@@ -26,7 +26,7 @@ def _battery_summary() -> tuple[str, str]:
     return (lvl.group(1) if lvl else "—", status_map.get(status.group(1), "—") if status else "—")
 
 def _storage_summary() -> tuple[str, str]:
-    # Human readable df on internal storage mount
+    # Human-readable df on internal storage mount
     out, _ = _shell_s(["df", "-h", "/storage/emulated"])
     line = next((ln for ln in (out or "").splitlines() if "/storage/emulated" in ln), "")
     parts = line.split()

@@ -1,4 +1,4 @@
-# scripts/photo_processing.py !
+# scripts/photo_processing.py
 
 import os
 import tkinter as tk
